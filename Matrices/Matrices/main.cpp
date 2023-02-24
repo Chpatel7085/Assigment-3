@@ -2,6 +2,7 @@
 #include <SFML/Window.hpp>
 #include <vector>
 #include <iostream>
+#include<cmath>
 
 using namespace sf;
 using namespace std;
@@ -21,25 +22,41 @@ class LocalSpace {
     VertexArray xAxis, yAxis;
 public:
     LocalSpace() {
-        point.setRadius(2.f);
+        point.setRadius(5.f);
         point.setFillColor(Color::Green);
-        point.setOrigin(point.getPosition().x + point.getRadius(), point.getPosition().y + point.getRadius());
         point.setPosition(0, 0);
+
+        //point.setOrigin(point.getPosition().x + point.getRadius(), point.getPosition().y + point.getRadius());
 
         xAxis = createLine(point.getPosition().x - 50, point.getPosition().y, point.getPosition().x + 50, point.getPosition().y, Color::Red);
         yAxis = createLine(point.getPosition().x, point.getPosition().y - 50, point.getPosition().x, point.getPosition().y + 50, Color::Blue);
     }
     void update(Vector2f &currPos) {
-        point.setPosition(currPos);
-        xAxis[0].position = Vector2f(point.getPosition().x - 50, point.getPosition().y);
-        xAxis[1].position = Vector2f(point.getPosition().x + 50, point.getPosition().y);
-        yAxis[0].position = Vector2f(point.getPosition().x , point.getPosition().y - 50);
-        yAxis[1].position = Vector2f(point.getPosition().x , point.getPosition().y + 50);
-        point.setOrigin(point.getPosition().x + point.getRadius(), point.getPosition().y + point.getRadius());
+        point.setPosition(currPos.x , currPos.y );
+        xAxis[0].position = Vector2f(point.getPosition().x - 50 , point.getPosition().y + point.getRadius());
+        xAxis[1].position = Vector2f(point.getPosition().x + 50, point.getPosition().y + point.getRadius());
+        yAxis[0].position = Vector2f(point.getPosition().x + point.getRadius(), point.getPosition().y - 50);
+        yAxis[1].position = Vector2f(point.getPosition().x + point.getRadius(), point.getPosition().y + 50); 
+        //point.setOrigin(currPos.x + point.getRadius(), currPos.y + point.getRadius());
 
     }
     Vector2f getPosition() {
         return { point.getPosition().x, point.getPosition().y };
+    }
+    vector<Vector2f> getPositionXAxis() {
+        
+        return { {xAxis[0].position.x, xAxis[0].position.y}, {xAxis[1].position.x, xAxis[1].position.y} };
+    }
+    vector<Vector2f> getPositionYAxis() {
+        return { {yAxis[0].position.x, yAxis[0].position.y}, {yAxis[1].position.x, yAxis[1].position.y} };
+    }
+    void updateXAxis(vector<Vector2f> currPos) {
+        xAxis[0].position = currPos[0];
+        xAxis[1].position = currPos[1];
+    }
+    void updateYAxis(vector<Vector2f> currPos) {
+        yAxis[0].position = currPos[0];
+        yAxis[1].position = currPos[1];
     }
     void draw(RenderWindow& window) {
         window.draw(point);
@@ -65,7 +82,7 @@ public:
 
 
 class Matrix {
-public:
+
     vector<vector<float> > translationMatrix(float x, float y) {
         vector<vector<float> >transMat(3, vector<float>(3, 0.f));
         transMat[0][0] = 1.f;
@@ -74,6 +91,15 @@ public:
         transMat[0][2] = x;
         transMat[1][2] = y;
         return transMat;
+    }
+    vector<vector<float> > rotationMatrix(float angle) {
+        vector<vector<float> >rotateMat(3, vector<float>(3, 0.f));
+        rotateMat[0][0] = cos(angle);
+        rotateMat[0][1] = -sin(angle);
+        rotateMat[1][0] = sin(angle);
+        rotateMat[1][1] = cos(angle);
+        rotateMat[2][2] = 1.f;
+        return rotateMat;
     }
     vector<vector<float> > columnVector(float x, float y) {
         vector<vector<float> >colVect(3, vector<float>(1, 0.f));
@@ -84,7 +110,7 @@ public:
     }
     vector<float> matrixMultiply(vector<vector<float> >& mat1, vector<vector<float> >& colVector) {
         vector<float>transformVect;
-        for (int i = 0; i < mat1.size()-1; i++) {
+        for (int i = 0; i < mat1.size(); i++) {
             float curr = 0.f;
             for (int j = 0; j < mat1.size(); j++) {
                 curr += colVector[j][0] * mat1[i][j];
@@ -93,13 +119,22 @@ public:
         }
         return transformVect;
     }
-    Vector2f trasform(float x, float y, float cX, float cY) {
+public:
+    //Matrix();
+    Vector2f transform(float x, float y, float cX, float cY) {
         vector<vector<float> >mat1 = translationMatrix(x, y);
         vector<vector<float> >colVector = columnVector(cX, cY);
         vector<float> currPos = matrixMultiply(mat1, colVector);
         return { currPos[0], currPos[1] };
     }
-
+    Vector2f rotate(float angle, float cX, float cY) {
+        angle = angle * 3.14159265f / 180.0f;
+        vector<vector<float> >mat1 = rotationMatrix(angle);
+        vector<vector<float> >colVector = columnVector(cX, cY);
+        vector<float> currPos = matrixMultiply(mat1, colVector);
+        cout << currPos[0] << " " << currPos[1] << endl;
+        return { currPos[0], currPos[1] };
+    }
     void inverseTransform() {
         cout << "Inverse Transform" << endl;
     }
@@ -113,7 +148,7 @@ int main()
     CoordinateSystem cs(window.getSize().x, window.getSize().y);
     //Position position(window.getPosition().x / 2, window.getPosition().y / 2);
     Matrix matrix;
-    int timer = 0;
+    int timerPoint = 0, timerAxis = 0;
     while (window.isOpen())
     {
         Event event;
@@ -122,18 +157,35 @@ int main()
             if (event.type == Event::Closed)
                 window.close();
         }
-        if (timer <25) {
-            timer++;
+        if (timerPoint <25) {
+            timerPoint++;
         }
         Vector2f pointPosition = ls.getPosition();
-        if (Mouse::isButtonPressed(Mouse::Left) && timer >= 25) {
-            Vector2f pos = matrix.trasform(Mouse::getPosition(window).x -pointPosition.x, Mouse::getPosition(window).y - pointPosition.y, pointPosition.x, pointPosition.y);
-            timer = 0;
+        if (Mouse::isButtonPressed(Mouse::Left) && timerPoint >= 25) {
+            Vector2f pos = matrix.transform(Mouse::getPosition(window).x -pointPosition.x, Mouse::getPosition(window).y - pointPosition.y, pointPosition.x, pointPosition.y);
+            timerPoint = 0;
             ls.update(pos);
         }
         //cout<<ls.point
-        if (Keyboard::isKeyPressed(Keyboard::Space))
-            matrix.inverseTransform();
+        if (timerAxis < 30) {
+            timerAxis++;
+        }
+        if (Keyboard::isKeyPressed(Keyboard::Space) && timerAxis >= 30) {
+            vector<Vector2f> xAxis = ls.getPositionXAxis();
+            vector<Vector2f> yAxis = ls.getPositionYAxis();
+            cout << xAxis[0].x << " " << xAxis[0].y << endl;
+            Vector2f posX1 = matrix.rotate(45.f, xAxis[0].x , xAxis[0].y);
+            Vector2f posX2 = matrix.rotate(45.f, xAxis[1].x , xAxis[1].y);
+            Vector2f posY1 = matrix.rotate(45.f, yAxis[0].x , yAxis[0].y);
+            Vector2f posY2 = matrix.rotate(45.f, yAxis[1].x , yAxis[1].y);
+            timerAxis = 0;
+            //Vector2f posX2 = matrix.rotate(45.f, pointPosition.x, pointPosition.y);
+            ls.updateXAxis({ {posX1}, {posX2} });
+            ls.updateYAxis({ {posY1}, {posY2} });
+            //ls.update(posX2);
+
+            cout << posX2.x << " " << posX2.y << endl;
+        }
 
         window.clear();
 
