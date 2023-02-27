@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{c8a3c766-3948-4f8a-bae1-4b3011678ddc}</ProjectGuid>
+    <ProjectGuid>{c1962c98-7987-4578-bf8e-d72ae3a86b6d}</ProjectGuid>
     <RootNamespace>Matrices</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -132,6 +132,19 @@
       <AdditionalDependencies>sfml-system.lib;sfml-audio.lib;sfml-graphics.lib;sfml-window.lib;sfml-network.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Coordinate_System.cpp" />
+    <ClCompile Include="createLine.cpp" />
+    <ClCompile Include="Local Space.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Matrix.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Coordinate_System.h" />
+    <ClInclude Include="createLine.h" />
+    <ClInclude Include="Local Space.h" />
+    <ClInclude Include="Matrix.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
